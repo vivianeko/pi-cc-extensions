@@ -38,10 +38,6 @@ import { renderRichToolResult, type WriteExecutionMetadataStore } from "./tool/d
 import { getMessageDisplayTheme } from "./tool/message-display.ts";
 import { fitToolCallSummary, humanizeToolLabel, toolCallSummary } from "./tool/names.ts";
 
-// 成功勾：亮绿 truecolor（与 message-display 一致）
-const BRIGHT_GREEN = "\x1b[38;2;80;220;100m";
-const ANSI_FG_RESET = "\x1b[39m";
-
 // pi-subagents 等扩展为 Agent 提供专用渲染器，ccstyle 必须保留。
 const DEDICATED_RENDERER_TOOLS = new Set(["Agent"]);
 
@@ -243,10 +239,7 @@ function createCcstyleTool(
 				(!visualState && (context?.isPartial || context?.executionStarted));
 			if (isPending && context?.executionStarted) scheduleAnimation(context);
 			const rawIcon = isPending ? pendingIcon(toolName) : settledIcon(toolName, visualState);
-			const icon =
-				visualState === "success"
-					? `${BRIGHT_GREEN}${rawIcon}${ANSI_FG_RESET}`
-					: theme.fg(toolIconColor(context), rawIcon);
+			const icon = theme.fg(toolIconColor(context), rawIcon);
 			const summary = toolCallSummary(toolName, args, {
 				title: label === toolName ? humanizeToolLabel(label) : label,
 				variant: "default",

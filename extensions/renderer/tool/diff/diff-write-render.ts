@@ -29,7 +29,7 @@ import {
 	type DiffRenderContext,
 	type RenderedRow,
 } from "./diff-layout.ts";
-import { renderDiffFrameLine, renderSingleDiffRow, renderWriteHeader } from "./diff-header.ts";
+import { renderSingleDiffRow, renderWriteHeader } from "./diff-header.ts";
 import {
 	applyLineLimit,
 	clampDiffLineToWidth,
@@ -547,9 +547,7 @@ export function renderWriteDiffResult(
 				unprocessedLogicalRows,
 				hovered,
 			);
-			const frame = renderDiffFrameLine(safeWidth, theme);
-			const renderedLines =
-				mode === "unified" ? [header, frame, ...bodyWithLimit, frame] : [header, ...bodyWithLimit];
+			const renderedLines = [header, ...bodyWithLimit];
 			const finalLines = clampDiffLinesToWidth(renderedLines, safeWidth);
 			return cache.set(safeWidth, options.expanded, mode, configKey, hovered, finalLines);
 		},

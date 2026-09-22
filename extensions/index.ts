@@ -1,39 +1,48 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { config } from "./config/config.ts";
+import { clearAllAnimations } from "./renderer/tool/result.ts";
+import { installDefaultMode, type DefaultModeHooks } from "./renderer/default-mode.ts";
+import {
+	installToolMouseInteraction,
+	teardownToolMouseInteraction,
+} from "./renderer/mouse/interaction.ts";
+import { installWriteOverride, WriteExecutionMetadataStore } from "./renderer/tool/diff/index.ts";
 
-// shell
-import piAliases from "./feature/shell/aliases.ts";
-import { installFlushDockedBash } from "./feature/shell/flush-docked-bash.ts";
-import customFooter from "./feature/shell/footer.ts";
-import piStartupHeader from "./feature/shell/startup-header.ts";
-import workingMessage from "./feature/shell/working-message.ts";
-
-// feature
-import agentAutocomplete from "./feature/reference/subagent.ts";
-import agentSummary from "./feature/agent-summary/index.ts";
-import context from "./feature/context.ts";
-import sessionReference from "./feature/reference/index.ts";
-import { installCompactThinking } from "./feature/compact-thinking.ts";
-
-// renderer
-import claudeCodeStyle, { getCompactThinkingConfig } from "./renderer/index.ts";
-import markdownEnhance from "./renderer/markdown-enhance.ts";
-
+/**
+ * Focused package entry point for the managed dotfiles setup.
+ *
+ * Keep tool cards, click-to-expand behavior, and rich diffs without replacing
+ * Pi's header, footer, thinking, Markdown, context, or autocomplete.
+ */
 export default function (pi: ExtensionAPI): void {
-	// shell chrome
-	if (config.enableAliases) piAliases(pi);
-	installFlushDockedBash();
-	piStartupHeader(pi);
-	if (config.enableWorkingMessage) workingMessage(pi);
-	customFooter(pi);
+	const writeExecutionMetadata = new WriteExecutionMetadataStore();
+	const mouseOwner = {};
+	let renderer: DefaultModeHooks | undefined;
 
-	// render stack：thinking controller 直接交给 style 作 query
-	markdownEnhance(pi);
-	claudeCodeStyle(pi, undefined, installCompactThinking(pi, getCompactThinkingConfig()));
+	function ensureRenderer(ctx: any): void {
+		if (renderer || ctx?.mode !== "tui" || !ctx?.hasUI) return;
+		renderer = installDefaultMode(writeExecutionMetadata);
+	}
 
-	// features
-	if (config.enableContextCommand) context(pi);
-	if (config.enableSessionReference) sessionReference(pi);
-	if (config.enableSubagentAutocomplete) agentAutocomplete(pi);
-	if (config.enableAgentSummary) agentSummary(pi);
+	pi.on("session_start", async (_event, ctx) => {
+		installWriteOverride(pi, writeExecutionMetadata);
+		ensureRenderer(ctx);
+		if (ctx?.mode === "tui" && ctx?.hasUI) {
+			installToolMouseInteraction(ctx, mouseOwner);
+		}
+	});
+
+	pi.on("session_compact", async (_event, ctx) => {
+		ensureRenderer(ctx);
+		if (ctx?.mode === "tui" && ctx?.hasUI) {
+			installToolMouseInteraction(ctx, mouseOwner);
+		}
+	});
+
+	pi.on("session_shutdown", async () => {
+		writeExecutionMetadata.clear();
+		teardownToolMouseInteraction(mouseOwner);
+		renderer?.shutdown();
+		renderer = undefined;
+		clearAllAnimations();
+	});
 }
