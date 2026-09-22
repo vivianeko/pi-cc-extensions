@@ -31,12 +31,8 @@ export interface DiffPalette {
 	removeEmphasisBgAnsi: string;
 }
 
-const ADD_ROW_BACKGROUND_MIX_RATIO = 0.12;
-const REMOVE_ROW_BACKGROUND_MIX_RATIO = 0.12;
-const ADD_INLINE_EMPHASIS_MIX_RATIO = 0.26;
-const REMOVE_INLINE_EMPHASIS_MIX_RATIO = 0.26;
-const ADDITION_TINT_TARGET: RgbColor = { r: 84, g: 190, b: 118 };
-const DELETION_TINT_TARGET: RgbColor = { r: 232, g: 95, b: 122 };
+const ADD_INLINE_EMPHASIS_MIX_RATIO = 0.35;
+const REMOVE_INLINE_EMPHASIS_MIX_RATIO = 0.35;
 export const ANSI_BG_RESET = "\x1b[49m";
 
 export function emphasis(theme: DiffTheme, text: string): string {
@@ -263,9 +259,12 @@ export function readThemeAnsi(
 }
 
 export function resolveDiffPalette(theme: DiffTheme): DiffPalette {
-	const baseBg = parseAnsiColorCode(readThemeAnsi(theme, "bg", "toolSuccessBg")) ??
-		parseAnsiColorCode(readThemeAnsi(theme, "bg", "toolPendingBg")) ??
-		parseAnsiColorCode(readThemeAnsi(theme, "bg", "userMessageBg")) ?? { r: 32, g: 35, b: 42 };
+	const addRowBgAnsi =
+		readThemeAnsi(theme, "bg", "toolSuccessBg") ?? rgbToBgAnsi({ r: 40, g: 50, b: 40 });
+	const removeRowBgAnsi =
+		readThemeAnsi(theme, "bg", "toolErrorBg") ?? rgbToBgAnsi({ r: 60, g: 40, b: 40 });
+	const addRowBg = parseAnsiColorCode(addRowBgAnsi) ?? { r: 40, g: 50, b: 40 };
+	const removeRowBg = parseAnsiColorCode(removeRowBgAnsi) ?? { r: 60, g: 40, b: 40 };
 	const addFg = parseAnsiColorCode(readThemeAnsi(theme, "fg", "toolDiffAdded")) ?? {
 		r: 88,
 		g: 173,
@@ -276,17 +275,12 @@ export function resolveDiffPalette(theme: DiffTheme): DiffPalette {
 		g: 98,
 		b: 98,
 	};
-	const addTint = mixRgb(addFg, ADDITION_TINT_TARGET, 0.35);
-	const removeTint = mixRgb(removeFg, DELETION_TINT_TARGET, 0.65);
-
-	const addRowBg = mixRgb(baseBg, addTint, ADD_ROW_BACKGROUND_MIX_RATIO);
-	const removeRowBg = mixRgb(baseBg, removeTint, REMOVE_ROW_BACKGROUND_MIX_RATIO);
-	const addEmphasisBg = mixRgb(baseBg, addTint, ADD_INLINE_EMPHASIS_MIX_RATIO);
-	const removeEmphasisBg = mixRgb(baseBg, removeTint, REMOVE_INLINE_EMPHASIS_MIX_RATIO);
+	const addEmphasisBg = mixRgb(addRowBg, addFg, ADD_INLINE_EMPHASIS_MIX_RATIO);
+	const removeEmphasisBg = mixRgb(removeRowBg, removeFg, REMOVE_INLINE_EMPHASIS_MIX_RATIO);
 
 	return {
-		addRowBgAnsi: rgbToBgAnsi(addRowBg),
-		removeRowBgAnsi: rgbToBgAnsi(removeRowBg),
+		addRowBgAnsi,
+		removeRowBgAnsi,
 		addEmphasisBgAnsi: rgbToBgAnsi(addEmphasisBg),
 		removeEmphasisBgAnsi: rgbToBgAnsi(removeEmphasisBg),
 	};

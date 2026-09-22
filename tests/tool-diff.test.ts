@@ -18,6 +18,7 @@ import {
 	renderEditDiffResult,
 	renderWriteDiffResult,
 } from "../extensions/renderer/tool/diff/diff-renderer.ts";
+import { resolveDiffPalette } from "../extensions/renderer/tool/diff/diff-palette.ts";
 import { normalizeConfig } from "../extensions/config/config.ts";
 
 initTheme("dark");
@@ -54,6 +55,23 @@ function output(component: any, width = 100): string[] {
 function isFrameLine(line: string): boolean {
 	return /^─+$/.test(stripVTControlCharacters(line).trim());
 }
+
+test("diff rows use the theme's plain success and error backgrounds", () => {
+	const palette = resolveDiffPalette({
+		...theme,
+		getBgAnsi(slot: string) {
+			if (slot === "toolSuccessBg") return "\x1b[48;2;40;50;40m";
+			if (slot === "toolErrorBg") return "\x1b[48;2;60;40;40m";
+			return "";
+		},
+		getFgAnsi(slot: string) {
+			return slot === "toolDiffAdded" ? "\x1b[38;2;88;173;88m" : "\x1b[38;2;196;98;98m";
+		},
+	});
+
+	assert.equal(palette.addRowBgAnsi, "\x1b[48;2;40;50;40m");
+	assert.equal(palette.removeRowBgAnsi, "\x1b[48;2;60;40;40m");
+});
 
 test("rich diff routes only successful edit/write results in on mode", () => {
 	for (const mode of ["on", "off"] as const) {
@@ -283,12 +301,15 @@ test("diff indicator mode live-updates on the same component via config getter",
 	);
 });
 
-test("split diff keeps the panel transparent while highlighting changed rows", () => {
-	const panelBackground = "\x1b[48;2;1;2;3m";
+test("split diff uses plain theme success and error backgrounds for changed rows", () => {
+	const successBackground = "\x1b[48;2;1;2;3m";
+	const errorBackground = "\x1b[48;2;4;5;6m";
 	const ansiTheme = {
 		...theme,
 		getBgAnsi(color: string) {
-			return color === "toolSuccessBg" ? panelBackground : undefined;
+			if (color === "toolSuccessBg") return successBackground;
+			if (color === "toolErrorBg") return errorBackground;
+			return undefined;
 		},
 	} as any;
 	const rendered = renderRichToolResult(
@@ -303,8 +324,8 @@ test("split diff keeps the panel transparent while highlighting changed rows", (
 		new WriteExecutionMetadataStore(),
 	);
 	const text = output(rendered, 140).join("\n");
-	assert.equal(text.includes(panelBackground), false);
-	assert.match(text, /\x1b\[48;2;/);
+	assert.equal(text.includes(successBackground), true);
+	assert.equal(text.includes(errorBackground), true);
 });
 
 test("final edit/write diff output removes terminal command injection", () => {

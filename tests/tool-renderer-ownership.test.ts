@@ -10,6 +10,7 @@ import {
 import { Text, visibleWidth } from "@earendil-works/pi-tui";
 type AnyToolDefinition = ToolDefinition<any, any, any>;
 import { config } from "../extensions/config/config.ts";
+import focusedToolRendererExtension from "../extensions/index.ts";
 import claudeCodeStyleExtension, {
 	ExpandedToolIoView,
 	humanizeMcpToolName,
@@ -19,7 +20,7 @@ import claudeCodeStyleExtension, {
 
 initTheme("dark");
 
-test("claude-code-style registers the write override at session_start", async () => {
+test("focused package entry registers the write override at session_start", async () => {
 	const registeredTools: unknown[] = [];
 	const events = new Map<string, Function[]>();
 	const pi = {
@@ -38,7 +39,7 @@ test("claude-code-style registers the write override at session_start", async ()
 		for (const handler of events.get(name) ?? []) await handler(event, ctx);
 	};
 
-	claudeCodeStyleExtension(pi as any);
+	focusedToolRendererExtension(pi as any);
 
 	// 加载阶段不注册 write override：此时其他扩展（如 pi-spark）尚未加载，
 	// 直接注册会与对方撞名。延迟到 session_start 后所有扩展已就绪再注册。
