@@ -65,12 +65,34 @@ test("diff rows use the theme's plain success and error backgrounds", () => {
 			return "";
 		},
 		getFgAnsi(slot: string) {
-			return slot === "toolDiffAdded" ? "\x1b[38;2;88;173;88m" : "\x1b[38;2;196;98;98m";
+			if (slot === "toolDiffAdded") return "\x1b[38;2;88;173;88m";
+			if (slot === "toolDiffRemoved") return "\x1b[38;2;196;98;98m";
+			return "";
 		},
 	});
 
 	assert.equal(palette.addRowBgAnsi, "\x1b[48;2;40;50;40m");
 	assert.equal(palette.removeRowBgAnsi, "\x1b[48;2;60;40;40m");
+});
+
+test("dedicated diff background slots override the tool backgrounds", () => {
+	const palette = resolveDiffPalette({
+		...theme,
+		getBgAnsi(slot: string) {
+			if (slot === "toolSuccessBg") return "\x1b[48;2;40;50;40m";
+			if (slot === "toolErrorBg") return "\x1b[48;2;60;40;40m";
+			return "";
+		},
+		getFgAnsi(slot: string) {
+			if (slot === "toolDiffAddedBg") return "\x1b[38;2;30;58;40m";
+			if (slot === "toolDiffRemovedBg") return "\x1b[38;2;67;35;43m";
+			if (slot === "toolDiffAdded") return "\x1b[38;2;88;173;88m";
+			return "\x1b[38;2;196;98;98m";
+		},
+	});
+
+	assert.equal(palette.addRowBgAnsi, "\x1b[48;2;30;58;40m");
+	assert.equal(palette.removeRowBgAnsi, "\x1b[48;2;67;35;43m");
 });
 
 test("rich diff routes only successful edit/write results in on mode", () => {

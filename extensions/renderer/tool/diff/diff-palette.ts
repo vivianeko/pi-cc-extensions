@@ -258,11 +258,22 @@ export function readThemeAnsi(
 	return undefined;
 }
 
+/** Dedicated diff-row background slots are authored as theme colors; pi exposes
+ * them as fg ANSI, so parse the color and re-emit it as a background. */
+function readDedicatedDiffBgAnsi(theme: DiffTheme, slot: string): string | undefined {
+	const parsed = parseAnsiColorCode(readThemeAnsi(theme, "fg", slot));
+	return parsed ? rgbToBgAnsi(parsed) : undefined;
+}
+
 export function resolveDiffPalette(theme: DiffTheme): DiffPalette {
 	const addRowBgAnsi =
-		readThemeAnsi(theme, "bg", "toolSuccessBg") ?? rgbToBgAnsi({ r: 40, g: 50, b: 40 });
+		readDedicatedDiffBgAnsi(theme, "toolDiffAddedBg") ??
+		readThemeAnsi(theme, "bg", "toolSuccessBg") ??
+		rgbToBgAnsi({ r: 40, g: 50, b: 40 });
 	const removeRowBgAnsi =
-		readThemeAnsi(theme, "bg", "toolErrorBg") ?? rgbToBgAnsi({ r: 60, g: 40, b: 40 });
+		readDedicatedDiffBgAnsi(theme, "toolDiffRemovedBg") ??
+		readThemeAnsi(theme, "bg", "toolErrorBg") ??
+		rgbToBgAnsi({ r: 60, g: 40, b: 40 });
 	const addRowBg = parseAnsiColorCode(addRowBgAnsi) ?? { r: 40, g: 50, b: 40 };
 	const removeRowBg = parseAnsiColorCode(removeRowBgAnsi) ?? { r: 60, g: 40, b: 40 };
 	const addFg = parseAnsiColorCode(readThemeAnsi(theme, "fg", "toolDiffAdded")) ?? {
