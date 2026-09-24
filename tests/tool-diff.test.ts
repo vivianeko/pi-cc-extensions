@@ -634,8 +634,8 @@ test("default-mode write collapsed uses title stats and created hint", () => {
 			.join("\n")
 			.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");
 		assert.match(text, /Write out\.ts \(\+1 -0\)/);
-		assert.match(text, /created • click to show more/);
-		assert.doesNotMatch(text, /▌/);
+		assert.match(text, /↳ created/);
+		assert.doesNotMatch(text, /\bok\b/);
 	} finally {
 		config.mode = previousMode;
 		hooks.shutdown();
